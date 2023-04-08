@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 from dataset import DocumentDataset
-from transformers import set_seed, default_data_collator
+from transformers import set_seed, default_data_collator, get_scheduler
 from torch.optim import AdamW
 import numpy as np
 from typing import Optional
@@ -81,16 +81,22 @@ class Trainer:
         model = self.model.to(self.device)
         wandb.watch(model)
         optimizer = AdamW(model.parameters(), lr=self.config.lr, betas=self.config.betas)
-        lr_scheduler = None
+        
         train_loader = self.create_dataloader(self.train_dataset, shuffle=True)
         if self.val_dataset is not None:
             val_loader = self.create_dataloader(self.val_dataset)
         
+        lr_scheduler = get_scheduler(
+            "linear",
+            optimizer=optimizer,
+            num_warmup_steps=0,
+            num_training_steps=self.config.epochs * len(train_loader),
+        )
+                
         for epoch in range(self.config.epochs):
             pbar = tqdm(enumerate(train_loader), total=len(train_loader))
             average_loss = 0
-            for step, batch in enumerate(pbar):
-                batch = batch[1]
+            for step, batch in pbar:
                 input_ids = batch['input_ids'].to(self.device)
                 attention_mask = batch['attention_mask'].to(self.device)
                 start_positions = batch['start_positions'].to(self.device)
@@ -106,8 +112,7 @@ class Trainer:
                     torch.nn.utils.clip_grad_norm_(model.parameters(), self.config.clip_gradients)
                     
                 optimizer.step()
-                if lr_scheduler is not None:
-                    lr_scheduler.step()
+                lr_scheduler.step()
                 optimizer.zero_grad()
             
             average_loss = average_loss / len(train_loader)
@@ -139,20 +144,10 @@ class Trainer:
                 metrics = self.compute_metrics(start_logits, end_logits, self.val_dataset)
                 metrics.update({'val_loss':average_val_loss})
                 wandb.log(metrics, step=epoch + 1)
-                print(f"epoch {epoch}:", metrics)
+                print(f"epoch {epoch+1}:", metrics)
                 self.checkpoint_saver(model, epoch+1, metrics['f1'])
                 
         wandb.finish()
-    
-    @staticmethod
-    def seed_everything(seed: int):
-        random.seed(seed)
-        os.environ['PYTHONHASHSEED'] = str(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
-        torch.backends.cudnn.deterministic = True
-        set_seed(seed)
         
     def compute_metrics(self, start_logits, end_logits, dataset, n_best: int = 20, max_answer_length: int = 50):
         predicted_answers = []
@@ -171,21 +166,28 @@ class Trainer:
             for start_index in start_indexes:
                 for end_index in end_indexes:
                 # Skip answers that are not fully in the context
-                    if (
-                        end_index < start_index
-                        or end_index - start_index + 1 > max_answer_length
-                    ):
+                    if (end_index < start_index or end_index - start_index + 1 > max_answer_length):
                         continue
-
+                    
                     answers.append(
                         {
                             "text": context[offsets[start_index][0] : offsets[end_index][1]],
                             "logit_score": start_logit[start_index] + end_logit[end_index],
                         }
                     )
-
+                    
             best_answer = max(answers, key=lambda x: x["logit_score"])
             predicted_answers.append({"id": str(example_id.item()), "prediction_text": best_answer["text"]})
         
         theoretical_answers = [{"id": str(ex["id"].item()), "answers": dataset.get_answer(ex["id"].item())} for ex in dataset]
         return self.metric.compute(predictions=predicted_answers, references=theoretical_answers)
+    
+    @staticmethod
+    def seed_everything(seed: int):
+        random.seed(seed)
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
+        set_seed(seed)
