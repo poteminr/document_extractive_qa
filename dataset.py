@@ -3,18 +3,29 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
+from sklearn.model_selection import train_test_split
 
+
+def get_train_val_dataset(file_path: str, test_size: float = 0.25, max_instances: int = -1):
+    dataframe = pd.read_json(file_path)
+    if max_instances != -1:
+        dataframe = dataframe.sample(n=max_instances, random_state=1007)
+    
+    train_dataframe, val_dataframe = train_test_split(dataframe, test_size=test_size, random_state=1007)
+    train_dataset = DocumentDataset(train_dataframe)
+    val_dataset = DocumentDataset(val_dataframe)
+    return train_dataset, val_dataset
+    
 
 class DocumentDataset(Dataset):
     def __init__(self,
-                 file_path: str,
-                 max_instances: int = 10,
+                 dataframe: pd.DataFrame,
                  encoder_model: str = 'cointegrated/rubert-tiny2'
                  ):
-        self.max_instances = max_instances
+        self.dataframe = dataframe
         self.encoder_model = encoder_model
         self.tokenizer = AutoTokenizer.from_pretrained(self.encoder_model)
-        self.tokenized_input = self.build_dataset(file_path)
+        self.tokenized_input = self.build_dataset()
                 
     def __getitem__(self, idx):
         return {key: torch.tensor(val[idx]) for key, val in self.tokenized_input.items()}
@@ -22,11 +33,7 @@ class DocumentDataset(Dataset):
     def __len__(self):
         return len(self.tokenized_input.input_ids)
     
-    def read_dataset(self, path: str):
-        self.dataframe = pd.read_json(path)
-        if self.max_instances != -1:
-            self.dataframe = self.dataframe.head(self.max_instances)
-        
+    def read_data(self):
         ids = self.dataframe['id'].values
         contexts = self.dataframe['text'].values
         questions = self.dataframe['label'].values
@@ -51,8 +58,8 @@ class DocumentDataset(Dataset):
                 end_positions[-1] = self.tokenizer.model_max_length
         tokenized_input.update({'start_positions': start_positions, 'end_positions': end_positions})
         
-    def build_dataset(self, file_path: str):
-        ids, contexts, questions, answers = self.read_dataset(file_path)
+    def build_dataset(self):
+        ids, contexts, questions, answers = self.read_data()
         tokenized_input = self.tokenizer(questions, contexts, truncation=True, padding=True, return_offsets_mapping=True)
         self.add_token_positions(tokenized_input, answers)
         tokenized_input.update({'id':ids})
