@@ -1,7 +1,5 @@
 import pandas as pd
-import numpy as np
 import torch
-from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 from sklearn.model_selection import train_test_split
 
@@ -17,11 +15,8 @@ def get_train_val_dataset(file_path: str, test_size: float = 0.25, max_instances
     return train_dataset, val_dataset
     
 
-class DocumentDataset(Dataset):
-    def __init__(self,
-                 dataframe: pd.DataFrame,
-                 encoder_model: str = 'cointegrated/rubert-tiny2'
-                 ):
+class DocumentDataset(torch.utils.data.Dataset):
+    def __init__(self, dataframe: pd.DataFrame, encoder_model: str = 'cointegrated/rubert-tiny2'):
         self.dataframe = dataframe
         self.encoder_model = encoder_model
         self.tokenizer = AutoTokenizer.from_pretrained(self.encoder_model)
@@ -71,5 +66,4 @@ class DocumentDataset(Dataset):
     def get_answer(self, sample_id: int):
         answer = self.dataframe[self.dataframe.id == sample_id].extracted_part.iloc[0]
         return {'text': answer['text'], 'answer_start':answer['answer_start']}
-
         
