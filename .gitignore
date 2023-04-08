@@ -1,2 +1,8 @@
 dataset
 .DS_Store
+.idea
+__pycache__
+.ipynb_checkpoints
+wandb
+.vscode
+model_weights
