@@ -69,7 +69,12 @@ class Trainer:
                 start_positions = batch['start_positions'].to(self.device)
                 end_positions = batch['end_positions'].to(self.device)
 
-                outputs = model(input_ids, attention_mask, start_positions, end_positions)
+                outputs = model(
+                            input_ids=input_ids,
+                            attention_mask=attention_mask,
+                            start_positions=start_positions,
+                            end_positions=end_positions
+                            )
                 loss = outputs.loss
                 average_loss += loss.item()
                 pbar.set_description(f"epoch {epoch + 1} iter {step} | train_loss: {loss.item():.5f}")
@@ -98,7 +103,12 @@ class Trainer:
                     start_positions = batch['start_positions'].to(self.device)
                     end_positions = batch['end_positions'].to(self.device)
                     with torch.no_grad():
-                        outputs = model(input_ids, attention_mask, start_positions, end_positions)
+                        outputs = model(
+                            input_ids=input_ids,
+                            attention_mask=attention_mask,
+                            start_positions=start_positions,
+                            end_positions=end_positions
+                            )
 
                     average_val_loss += outputs['loss'].item()
                     start_logits.append(outputs.start_logits.cpu().numpy())

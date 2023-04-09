@@ -1,4 +1,5 @@
 import wandb
+from transformers import AutoModelForQuestionAnswering
 from models import BaselineModel
 from utils.dataset import get_train_val_dataset
 from utils.options import train_options
@@ -17,9 +18,10 @@ if __name__ == "__main__":
         max_instances=arguments.max_instances
         )
     
-    model = BaselineModel()
-    config = TrainerConfig()
-    
+    # model = BaselineModel(encoder_model=arguments.encoder_model)
+    model = AutoModelForQuestionAnswering.from_pretrained(arguments.encoder_model)
+
+    config = TrainerConfig()    
     wandb.init(project="Kontur", config=train_config_to_dict(config))
     trainer = Trainer(model=model, config=config, train_dataset=train_dataset, val_dataset=val_dataset)
     trainer.train()
