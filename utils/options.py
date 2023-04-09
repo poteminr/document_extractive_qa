@@ -8,5 +8,6 @@ def train_options():
     parser.add_argument("--max_instances", default=-1, type=int, help='max_instances for DocumentDataset')
     parser.add_argument("--test_size", default=0.25, type=float, help='test_size for DocumentDataset')
     parser.add_argument("--model_pretrained_path", default=None, type=str, help='path to trained model for QA task')
+    parser.add_argument("--model_type", default='huggingface', type=str, help='model type: hf or default pytorch')
 
     return parser.parse_args()

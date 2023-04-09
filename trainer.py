@@ -37,7 +37,7 @@ class Trainer:
         self.metric = evaluate.load("squad")
         self.seed = 1007
         self.seed_everything(self.seed)
-        self.checkpoint_saver = CheckpointSaver(dirpath='./model_weights', decreasing=False, top_n=1)
+        self.checkpoint_saver = CheckpointSaver(dirpath='./model_weights', model_type=self.config.model_type)
 
     def create_dataloader(self, dataset: DocumentDataset, shuffle=False):
         return DataLoader(dataset=dataset, batch_size=self.config.batch_size, shuffle=shuffle,

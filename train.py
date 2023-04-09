@@ -18,10 +18,14 @@ if __name__ == "__main__":
         max_instances=arguments.max_instances
         )
     
-    # model = BaselineModel(encoder_model=arguments.encoder_model)
-    model = AutoModelForQuestionAnswering.from_pretrained(arguments.encoder_model)
+    if arguments.model_type == 'huggingface':
+        model = AutoModelForQuestionAnswering.from_pretrained(arguments.encoder_model)
+    else:        
+        model = BaselineModel(encoder_model=arguments.encoder_model)
 
-    config = TrainerConfig()    
+    config = TrainerConfig()
+    config.model_type = arguments.model_type
+    
     wandb.init(project="Kontur", config=train_config_to_dict(config))
     trainer = Trainer(model=model, config=config, train_dataset=train_dataset, val_dataset=val_dataset)
     trainer.train()
