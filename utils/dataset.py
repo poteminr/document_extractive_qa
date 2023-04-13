@@ -4,9 +4,19 @@ from transformers import AutoTokenizer
 from sklearn.model_selection import train_test_split
 
 
-def get_train_val_dataset(file_path: str, test_size: float = 0.25, max_instances: int = -1):
+    
+def get_train_val_dataset(file_path: str, test_size: float = 0.25, max_instances: int = -1, train_label: int = -1):
+    if train_label == 1:
+        label_text = 'обеспечение исполнения контракта'
+    elif train_label == 2:
+        label_text = 'обеспечение гарантийных обязательств'
+    
     dataframe = pd.read_json(file_path)
-    if max_instances != -1:
+    
+    if train_label != -1:
+        dataframe = dataframe[dataframe.label == label_text]
+    
+    if max_instances != -1 and len(dataframe) > max_instances:
         dataframe = dataframe.sample(n=max_instances, random_state=1007)
     
     train_dataframe, val_dataframe = train_test_split(dataframe, test_size=test_size, random_state=1007)

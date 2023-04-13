@@ -15,7 +15,8 @@ if __name__ == "__main__":
     train_dataset, val_dataset = get_train_val_dataset(
         file_path=arguments.file_path,
         test_size=arguments.test_size,
-        max_instances=arguments.max_instances
+        max_instances=arguments.max_instances,
+        train_label=arguments.train_label
         )
     
     if arguments.model_type == 'huggingface':
@@ -25,6 +26,7 @@ if __name__ == "__main__":
 
     config = TrainerConfig()
     config.model_type = arguments.model_type
+    config.train_label = arguments.train_label
     
     wandb.init(project="Kontur", config=train_config_to_dict(config))
     trainer = Trainer(model=model, config=config, train_dataset=train_dataset, val_dataset=val_dataset)

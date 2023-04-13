@@ -20,6 +20,7 @@ class TrainerConfig:
     clip_gradients = False
     grad_norm_clip = 10
     num_workers = 0
+    lr_scheduler = False
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -53,12 +54,13 @@ class Trainer:
         if self.val_dataset is not None:
             val_loader = self.create_dataloader(self.val_dataset)
 
-        lr_scheduler = get_scheduler(
-            "linear",
-            optimizer=optimizer,
-            num_warmup_steps=0,
-            num_training_steps=self.config.epochs * len(train_loader),
-        )
+        if self.config.lr_scheduler:
+            lr_scheduler = get_scheduler(
+                "linear",
+                optimizer=optimizer,
+                num_warmup_steps=0,
+                num_training_steps=self.config.epochs * len(train_loader),
+            )
 
         for epoch in range(self.config.epochs):
             pbar = tqdm(enumerate(train_loader), total=len(train_loader))
@@ -84,7 +86,8 @@ class Trainer:
                     torch.nn.utils.clip_grad_norm_(model.parameters(), self.config.clip_gradients)
 
                 optimizer.step()
-                lr_scheduler.step()
+                if self.config.lr_scheduler:
+                    lr_scheduler.step()
                 optimizer.zero_grad()
 
             average_loss = average_loss / len(train_loader)
@@ -122,11 +125,11 @@ class Trainer:
                 metrics.update({'val_loss': average_val_loss})
                 wandb.log(metrics, step=epoch + 1)
                 print(f"epoch {epoch + 1}:", metrics)
-                self.checkpoint_saver(model, epoch + 1, metrics['f1'])
+                self.checkpoint_saver(model, epoch + 1, metrics['exact_match'])
 
         wandb.finish()
 
-    def compute_metrics(self, start_logits, end_logits, dataset, n_best: int = 20, max_answer_length: int = 50):
+    def compute_metrics(self, start_logits, end_logits, dataset, n_best: int = 20, max_answer_length: int = 310):
         predicted_answers = []
         for idx, example in enumerate(dataset):
             example_id = example['id']
@@ -142,7 +145,7 @@ class Trainer:
 
             for start_index in start_indexes:
                 for end_index in end_indexes:
-                    # Skip answers that are not fully in the context
+                    # Skip answers with a length that is either < 0 or > max_answer_length
                     if end_index < start_index or end_index - start_index + 1 > max_answer_length:
                         continue
 
