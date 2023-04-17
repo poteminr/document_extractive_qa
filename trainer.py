@@ -21,6 +21,7 @@ class TrainerConfig:
     grad_norm_clip = 10
     num_workers = 0
     lr_scheduler = False
+    num_training_steps_for_freeze = 3000 # -1 to train whole model from first steps
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -61,7 +62,13 @@ class Trainer:
                 num_warmup_steps=0,
                 num_training_steps=self.config.epochs * len(train_loader),
             )
+            
+        is_encoder_frozen = False
+        if self.config.num_training_steps_for_freeze != -1:
+            self.set_encoder_requires_grad(model, requires_grad=False)
+            is_encoder_frozen = True
 
+        num_training_steps = 0
         for epoch in range(self.config.epochs):
             pbar = tqdm(enumerate(train_loader), total=len(train_loader))
             average_loss = 0
@@ -71,14 +78,20 @@ class Trainer:
                 start_positions = batch['start_positions'].to(self.device)
                 end_positions = batch['end_positions'].to(self.device)
 
+                if num_training_steps >= self.config.num_training_steps_for_freeze and is_encoder_frozen:
+                    is_encoder_frozen = False
+                    self.set_encoder_requires_grad(model, requires_grad=True)
+                
                 outputs = model(
                             input_ids=input_ids,
                             attention_mask=attention_mask,
                             start_positions=start_positions,
                             end_positions=end_positions
                             )
+        
                 loss = outputs.loss
                 average_loss += loss.item()
+                num_training_steps += batch['input_ids'].size()[0]
                 pbar.set_description(f"epoch {epoch + 1} iter {step} | train_loss: {loss.item():.5f}")
 
                 loss.backward()
@@ -172,3 +185,10 @@ class Trainer:
         torch.cuda.manual_seed(seed)
         torch.backends.cudnn.deterministic = True
         set_seed(seed)
+    
+    @staticmethod
+    def set_encoder_requires_grad(model, requires_grad=False):
+        encoder, _ = model.children()
+        for param in encoder.parameters():
+            param.requires_grad = requires_grad
+        print(f'Encoder grad set to {requires_grad}')
