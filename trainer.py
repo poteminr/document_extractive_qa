@@ -21,6 +21,7 @@ class TrainerConfig:
     grad_norm_clip = 10
     num_workers = 0
     lr_scheduler = False
+    scheduler_type = 'cosine'
     num_training_steps_for_freeze = 3000 # -1 to train whole model from first steps
 
     def __init__(self, **kwargs):
@@ -57,7 +58,7 @@ class Trainer:
 
         if self.config.lr_scheduler:
             lr_scheduler = get_scheduler(
-                "linear",
+                self.config.scheduler_type,
                 optimizer=optimizer,
                 num_warmup_steps=0,
                 num_training_steps=self.config.epochs * len(train_loader),

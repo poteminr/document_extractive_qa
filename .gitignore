@@ -6,3 +6,4 @@ __pycache__
 wandb
 .vscode
 model_weights
+code_snippets.ipynb
