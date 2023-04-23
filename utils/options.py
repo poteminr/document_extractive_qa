@@ -11,4 +11,5 @@ def train_options():
     parser.add_argument("--model_pretrained_path", default=None, type=str, help='path to trained model for QA task')
     parser.add_argument("--model_type", default='huggingface', type=str, help='model type: hf or default pytorch')
     parser.add_argument("--train_label", default=-1, type=int, help='choose specific label for training')
+    parser.add_argument("--seed", default=1007, type=int, help='set seed')
     return parser.parse_args()

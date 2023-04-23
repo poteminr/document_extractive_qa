@@ -1,5 +1,3 @@
-import os
-import random
 import torch
 import numpy as np
 import wandb
@@ -10,6 +8,7 @@ from torch.utils.data import DataLoader
 from transformers import set_seed, default_data_collator, get_scheduler
 from utils.checkpoint_saver import CheckpointSaver
 from utils.dataset import DocumentDataset
+from utils.set_seed import seed_everything
 
 
 class TrainerConfig:
@@ -38,8 +37,7 @@ class Trainer:
         self.config = config
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.metric = evaluate.load("squad")
-        self.seed = 1007
-        self.seed_everything(self.seed)
+        seed_everything(self.config.seed)
         self.checkpoint_saver = CheckpointSaver(dirpath='./model_weights', model_type=self.config.model_type)
 
     def create_dataloader(self, dataset: DocumentDataset, shuffle=False):
@@ -47,7 +45,7 @@ class Trainer:
                           collate_fn=default_data_collator, num_workers=self.config.num_workers)
 
     def train(self):
-        self.seed_everything(self.seed)
+        seed_everything(self.config.seed)
         model = self.model.to(self.device)
         wandb.watch(model)
         optimizer = torch.optim.AdamW(model.parameters(), lr=self.config.lr, betas=self.config.betas)
@@ -177,16 +175,6 @@ class Trainer:
                                dataset]
         return self.metric.compute(predictions=predicted_answers, references=theoretical_answers)
 
-    @staticmethod
-    def seed_everything(seed: int):
-        random.seed(seed)
-        os.environ['PYTHONHASHSEED'] = str(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
-        torch.backends.cudnn.deterministic = True
-        set_seed(seed)
-    
     @staticmethod
     def set_encoder_requires_grad(model, requires_grad=False):
         encoder, _ = model.children()

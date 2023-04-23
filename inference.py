@@ -26,7 +26,7 @@ def create_prediction(test_dataframe, qa_pipepline, path_to_save='predictions.js
 
 if __name__ == '__main__':
     arguments = train_options()  
-    seed_everything(1007)
+    seed_everything(arguments.seed)
     test_dataframe = pd.read_json(arguments.test_file_path)
     
     if arguments.model_type == 'huggingface':
