@@ -7,3 +7,4 @@ wandb
 .vscode
 model_weights
 code_snippets.ipynb
+utils/splited_dataset.py
