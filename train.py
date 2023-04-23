@@ -23,6 +23,8 @@ if __name__ == "__main__":
     
     if arguments.model_type == 'huggingface':
         model = AutoModelForQuestionAnswering.from_pretrained(arguments.encoder_model)
+        if arguments.model_pretrained_path is not None:
+            model.from_pretrained(arguments.model_pretrained_path)
     else:        
         model = BaselineModel(encoder_model=arguments.encoder_model)
 
