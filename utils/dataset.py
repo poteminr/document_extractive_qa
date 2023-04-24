@@ -25,17 +25,11 @@ def get_train_val_dataset(file_path: str, test_size: float = 0.25, max_instances
     return train_dataset, val_dataset
 
 
-def get_train_val_sberquad(test_size: float = 0.2):
-    dataset = load_dataset('sberquad', split='validation').train_test_split(test_size=test_size)
-    train, test = dataset['train'], dataset['test']   
-    train_dataset, test_dataset = SberquadDataset(train), SberquadDataset(test)
-    return train_dataset, test_dataset
-
-
 class DocumentDataset(torch.utils.data.Dataset):
-    def __init__(self, dataframe: pd.DataFrame, encoder_model: str = 'cointegrated/rubert-tiny2'):
+    def __init__(self, dataframe: pd.DataFrame, encoder_model: str = 'cointegrated/rubert-tiny2', with_answers=True):
         self.dataframe = dataframe
         self.encoder_model = encoder_model
+        self.with_answers = with_answers
         self.tokenizer = AutoTokenizer.from_pretrained(self.encoder_model)
         self.tokenized_input = self.build_dataset()
                 
@@ -49,7 +43,11 @@ class DocumentDataset(torch.utils.data.Dataset):
         ids = self.dataframe['id'].values
         contexts = self.dataframe['text'].values
         questions = self.dataframe['label'].values
-        answers = self.dataframe['extracted_part'].values
+        answers = None
+        
+        if self.with_answers:
+            answers = self.dataframe['extracted_part'].values
+            
         return ids, list(contexts), list(questions), answers
 
     def add_token_positions(self, tokenized_input, answers):
@@ -71,9 +69,12 @@ class DocumentDataset(torch.utils.data.Dataset):
         tokenized_input.update({'start_positions': start_positions, 'end_positions': end_positions})
         
     def build_dataset(self):
-        ids, contexts, questions, answers = self.read_data()
+        ids, contexts, questions, answers = self.read_data()            
         tokenized_input = self.tokenizer(questions, contexts, truncation=True, padding=True, return_offsets_mapping=True)
-        self.add_token_positions(tokenized_input, answers)
+        
+        if self.with_answers:
+            self.add_token_positions(tokenized_input, answers)
+            
         tokenized_input.update({'id':ids})
         return tokenized_input
     
@@ -81,8 +82,16 @@ class DocumentDataset(torch.utils.data.Dataset):
         return self.dataframe[self.dataframe.id == sample_id].text.iloc[0]
     
     def get_answer(self, sample_id: int):
-        answer = self.dataframe[self.dataframe.id == sample_id].extracted_part.iloc[0]
-        return {'text': answer['text'], 'answer_start':answer['answer_start']}
+        if self.with_answers:
+            answer = self.dataframe[self.dataframe.id == sample_id].extracted_part.iloc[0]
+            return {'text': answer['text'], 'answer_start':answer['answer_start']}
+
+
+def _get_train_val_sberquad(test_size: float = 0.2):
+    dataset = load_dataset('sberquad', split='validation').train_test_split(test_size=test_size)
+    train, test = dataset['train'], dataset['test']   
+    train_dataset, test_dataset = SberquadDataset(train), SberquadDataset(test)
+    return train_dataset, test_dataset
 
 
 class SberquadDataset(torch.utils.data.Dataset):
