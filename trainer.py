@@ -16,11 +16,11 @@ class TrainerConfig:
     lr = 1e-4
     batch_size = 32
     betas = (0.9, 0.95)
-    clip_gradients = False
+    clip_gradients = True
     grad_norm_clip = 10
     num_workers = 0
-    lr_scheduler = False
-    scheduler_type = 'cosine'
+    lr_scheduler = True
+    scheduler_type = 'linear'
     num_training_steps_for_freeze = -1 # -1 to train whole model from first steps
 
     def __init__(self, **kwargs):
@@ -105,7 +105,7 @@ class Trainer:
             average_loss = average_loss / len(train_loader)
             wandb.log({f'train_loss': average_loss}, step=epoch + 1)
             print(f"train_loss: {average_loss}, epoch: {epoch + 1}")
-
+                      
             if self.val_dataset is not None:
                 # Evaluation
                 model.eval()
@@ -138,6 +138,8 @@ class Trainer:
                 wandb.log(metrics, step=epoch + 1)
                 print(f"epoch {epoch + 1}:", metrics)
                 self.checkpoint_saver(model, epoch + 1, metrics['exact_match'])
+            else:
+                self.checkpoint_saver(model, epoch + 1, epoch)
 
         wandb.finish()
 
