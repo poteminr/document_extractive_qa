@@ -1,8 +1,6 @@
-import torch
 import pandas as pd
 from tqdm import tqdm
 from transformers import pipeline, AutoModelForQuestionAnswering
-from models import BaselineModel
 from utils.options import train_options
 from utils.set_seed import seed_everything
 
@@ -29,17 +27,9 @@ if __name__ == '__main__':
     seed_everything(arguments.seed)
     test_dataframe = pd.read_json(arguments.test_file_path)
     
-    if arguments.model_type == 'huggingface':
-        model = AutoModelForQuestionAnswering.from_pretrained(arguments.encoder_model)
-    else:        
-        model = BaselineModel(encoder_model=arguments.encoder_model)
-
+    model = AutoModelForQuestionAnswering.from_pretrained(arguments.encoder_model)
     if arguments.model_pretrained_path is not None:
-        if arguments.model_type == 'huggingface':
-            model.from_pretrained(arguments.model_pretrained_path)
-        else:
-            model.load_state_dict(torch.load(arguments.model_pretrained_path))
+        model.from_pretrained(arguments.model_pretrained_path)
 
-    if arguments.model_type == 'huggingface':
-        qa_pipepline = pipeline("question-answering", model=model, tokenizer=arguments.encoder_model)
-        create_prediction(test_dataframe, qa_pipepline)
+    qa_pipepline = pipeline("question-answering", model=model, tokenizer=arguments.encoder_model)
+    create_prediction(test_dataframe, qa_pipepline)

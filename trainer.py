@@ -5,7 +5,7 @@ import evaluate
 from tqdm import tqdm
 from typing import Optional
 from torch.utils.data import DataLoader
-from transformers import set_seed, default_data_collator, get_scheduler
+from transformers import default_data_collator, get_scheduler
 from utils.checkpoint_saver import CheckpointSaver
 from utils.dataset import DocumentDataset
 from utils.set_seed import seed_everything
@@ -21,7 +21,7 @@ class TrainerConfig:
     num_workers = 0
     lr_scheduler = False
     scheduler_type = 'cosine'
-    num_training_steps_for_freeze = 3000 # -1 to train whole model from first steps
+    num_training_steps_for_freeze = -1 # -1 to train whole model from first steps
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():

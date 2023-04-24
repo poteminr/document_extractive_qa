@@ -1,6 +1,5 @@
 import wandb
 from transformers import AutoModelForQuestionAnswering
-from models import BaselineModel
 from utils.dataset import get_train_val_dataset
 from utils.options import train_options
 from utils.set_seed import seed_everything
@@ -21,12 +20,9 @@ if __name__ == "__main__":
         train_label=arguments.train_label
         )
     
-    if arguments.model_type == 'huggingface':
-        model = AutoModelForQuestionAnswering.from_pretrained(arguments.encoder_model)
-        if arguments.model_pretrained_path is not None:
-            model.from_pretrained(arguments.model_pretrained_path)
-    else:        
-        model = BaselineModel(encoder_model=arguments.encoder_model)
+    model = AutoModelForQuestionAnswering.from_pretrained(arguments.encoder_model)
+    if arguments.model_pretrained_path is not None:
+        model.from_pretrained(arguments.model_pretrained_path)
 
     config = TrainerConfig()
     config.model_type = arguments.model_type
