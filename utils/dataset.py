@@ -19,9 +19,14 @@ def get_train_val_dataset(file_path: str, test_size: float = 0.25, max_instances
     if max_instances != -1 and len(dataframe) > max_instances:
         dataframe = dataframe.sample(n=max_instances, random_state=1007)
     
-    train_dataframe, val_dataframe = train_test_split(dataframe, test_size=test_size, random_state=1007)
-    train_dataset = DocumentDataset(train_dataframe)
-    val_dataset = DocumentDataset(val_dataframe)
+    if test_size == 0:
+        train_dataset = DocumentDataset(dataframe)
+        val_dataset = None
+    else:
+        train_dataframe, val_dataframe = train_test_split(dataframe, test_size=test_size, random_state=1007)
+        train_dataset = DocumentDataset(train_dataframe)
+        val_dataset = DocumentDataset(val_dataframe)
+        
     return train_dataset, val_dataset
 
 
