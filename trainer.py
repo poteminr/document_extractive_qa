@@ -12,7 +12,7 @@ from utils.set_seed import seed_everything
 
 
 class TrainerConfig:
-    epochs = 20
+    epochs = 5
     lr = 1e-4
     batch_size = 32
     betas = (0.9, 0.95)
@@ -105,7 +105,7 @@ class Trainer:
             average_loss = average_loss / len(train_loader)
             wandb.log({f'train_loss': average_loss}, step=epoch + 1)
             print(f"train_loss: {average_loss}, epoch: {epoch + 1}")
-                      
+
             if self.val_dataset is not None:
                 # Evaluation
                 model.eval()
