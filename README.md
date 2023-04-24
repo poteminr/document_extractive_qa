@@ -10,5 +10,10 @@
 1. Gradient Clipping.
 2. Различные lr_scheduler (linear, cosine, polynomial).
 3. Заморозка энкодер модели и обучение только последнего линейного слоя около 3000 шагов, потом размораживание энкодера и дообучение еще несколько эпох. (Не используется в финальном решении)
+### Ссылки и Примечания
+[Веса финальной модели (gdrive)](https://drive.google.com/drive/folders/1_FNojiT2LJDH3C2slfoFXh-Z8ufdKbP4?usp=sharing)
 
+Все сиды зафиксированы, можно воспроизвести:
+
+```train.py --file_path train.json --test_size 0``` 
 
