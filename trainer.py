@@ -12,7 +12,7 @@ from utils.set_seed import seed_everything
 
 
 class TrainerConfig:
-    epochs = 5
+    epochs = 4
     lr = 1e-4
     batch_size = 32
     betas = (0.9, 0.95)
